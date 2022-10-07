@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UFT-8" />
+    <title>TODO</title>
+  </head>
+
+  <body>
+    <form action="http://localhost:4000" method="post" id="createTodoFrom">
+      <lable for="ttitle">
+        Todo
+        <input type="text" name="title" id="title" />
+      </lable>
+      <!-- <lable for="ttitle">
+        Complete
+        <input type="text" name="complete" id="complete" />
+      </lable> -->
+      <input type="submit" name="submit" id="submit" />
+    </form>
+    <ul id="todoList"></ul>
+
+    <script src="./client.js"></script>
+    <script src="template.js"></script>
+    <script>
+      async function main() {
+        const todoes = await getTodoes();
+        let renderedTodoesTemplate = "";
+        todoes.forEach((todo) => {
+          renderedTodoesTemplate += todoTamplate(todo);
+        });
+
+        document.getElementById("todoList").innerHTML = renderedTodoesTemplate;
+      }
+
+      const createTodoFromElement = document.getElementById("createTodoFrom");
+      createTodoFromElement.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const task = {
+          todo: document.getElementById("title").value,
+
+          complete: "false",
+        };
+
+        const response = fetch("http://localhost:4000", {
+          method: "POST",
+          body: JSON.stringify(task),
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        });
+        // console.log(task);
+
+        response.then(async (result) => {
+          const responseBody = await result.json();
+          task.id = responseBody.id;
+
+          const todolistElement = document.getElementById("todoList");
+          todolistElement.insertAdjacentHTML("afterbegin", todoTamplate(task));
+        });
+      });
+
+      
+      main();
+    </script>
+  </body>
+</html>

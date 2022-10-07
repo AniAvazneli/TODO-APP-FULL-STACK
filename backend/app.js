@@ -1,7 +1,7 @@
 import express from "express"; //web server
 import bodyParser from "body-parser";
 import pg from "pg"; // connection to database
-
+import cors from "cors";
 
 // to connect node with postgreSQL
 const { Pool } = pg;
@@ -17,6 +17,9 @@ const pool = new Pool({
 const app = express();
 // app should use bodyParser to gives you information with json.
 app.use(bodyParser.json());
+// app should use cors to have an access client on our server
+app.use(cors());
+
 
 // inserts data 
 app.post("/", async (req, res, next)=> {
@@ -29,25 +32,26 @@ app.post("/", async (req, res, next)=> {
     const result = await client.query({
         text: `INSERT INTO todoes
         (todo,complete)
-        VALUES($1, $2);`,
+        VALUES($1, $2) RETURNING id;`,
         values: [
             task.todo,
             task.complete
         ]
     });
 
-    console.log("sent INSERT query to database");
+    const resultObject = {
+        id: result.rows[0].id,
+        message: `New task : ${task.todo} is created.`
+    }
 
-    console.log("THE END");
-
-    res.send(`New task : ${task.todo} is created.`);
-})
+    res.json(resultObject);
+});
 
 // gets data
 app.get("/", async (req, res, next) => {
     const client = await pool.connect();
     const result = await client.query({
-        text: 'SELECT * FROM todoes;',
+        text: 'SELECT * FROM todoes ORDER BY id DESC;',  // we use "ORDER BY id DESC" to add on top
     });
 
     res.json(result.rows);
@@ -71,6 +75,18 @@ app.put("/:id", async (req, res, next) => {
     });
 
     res.send(`task with id ${id} updated`)
+})
+
+app.delete("/:id", async (req, res, next) => {
+    const id = req.params.id;
+
+    const client = await pool.connect();
+    const result = await client.query({
+        text: `DELETE FROM todoes WHERE id=$1;`,
+        values: [id]
+    });
+
+    res.send(`task with the id ${id} deleted`)
 })
 
 
